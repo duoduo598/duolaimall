@@ -22,6 +22,6 @@ public interface PlatformAttributeService {
 
     void savePlatformAttrInfo(PlatformAttributeParam platformAttributeParam);
 
-    PlatformAttributeValueDTO getPlatformAttrInfo(Long attrId);
+    List<PlatformAttributeValueDTO> getPlatformAttrInfo(Long attrId);
 
 }

@@ -15,4 +15,5 @@ public interface PlatformAttributeInfoConverter {
     List<PlatformAttributeInfoDTO> platformAttributeInfoPOs2DTOs(List<PlatformAttributeInfo> platformAttributeInfos);
 
     PlatformAttributeValueDTO platformAttributeValuePO2DTO(PlatformAttributeValue platformAttributeValue);
+    List<PlatformAttributeValueDTO> platformAttributeValuePOs2DTO(List<PlatformAttributeValue> platformAttributeValue);
 }

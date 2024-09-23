@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 public interface SpuService {
+    /*
+      查询所有的销售属性
+ */
+    List<SaleAttributeInfoDTO> getSaleAttrInfoList();
 
     /*
          根据分页参数查询SPU分页数据
