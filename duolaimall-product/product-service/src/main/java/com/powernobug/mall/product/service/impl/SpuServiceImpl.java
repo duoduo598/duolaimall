@@ -138,7 +138,8 @@ public class SpuServiceImpl implements SpuService {
 
     @Override
     public List<SpuSaleAttributeInfoDTO> getSpuSaleAttrList(Long spuId) {
-        return null;
+        List<SpuSaleAttributeInfo> spuSaleAttributeInfos = spuSaleAttrInfoMapper.selectSpuSaleAttrList(spuId);
+        return spuInfoConverter.spuSaleAttributeInfoPOs2DTOs(spuSaleAttributeInfos);
     }
 
     @Override

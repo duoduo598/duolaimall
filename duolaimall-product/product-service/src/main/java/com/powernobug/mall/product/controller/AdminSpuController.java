@@ -3,7 +3,9 @@ package com.powernobug.mall.product.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.powernobug.mall.common.result.Result;
 import com.powernobug.mall.product.dto.SaleAttributeInfoDTO;
+import com.powernobug.mall.product.dto.SpuImageDTO;
 import com.powernobug.mall.product.dto.SpuInfoPageDTO;
+import com.powernobug.mall.product.dto.SpuSaleAttributeInfoDTO;
 import com.powernobug.mall.product.model.SpuInfo;
 import com.powernobug.mall.product.query.SpuInfoParam;
 import com.powernobug.mall.product.service.SpuService;
@@ -43,5 +45,17 @@ public class AdminSpuController {
     public Result saveSpuInfo(@RequestBody SpuInfoParam spuInfoParam){
         spuService.saveSpuInfo(spuInfoParam);
         return Result.ok(null);
+    }
+    //商品图片的回显
+    @GetMapping("admin/product/spuImageList/{spuId}")
+    public Result<List<SpuImageDTO>> getSpuImageList(@PathVariable("spuId") Long spuId) {
+        List<SpuImageDTO> spuImageList = spuService.getSpuImageList(spuId);
+        return Result.ok(spuImageList);
+    }
+    //商品销售信息
+    @GetMapping("admin/product/spuSaleAttrList/{spuId}")
+    public Result<List<SpuSaleAttributeInfoDTO>> getSpuSaleAttrList(@PathVariable("spuId") Long spuId) {
+        List<SpuSaleAttributeInfoDTO> spuSaleAttrList = spuService.getSpuSaleAttrList(spuId);
+        return Result.ok(spuSaleAttrList);
     }
 }
