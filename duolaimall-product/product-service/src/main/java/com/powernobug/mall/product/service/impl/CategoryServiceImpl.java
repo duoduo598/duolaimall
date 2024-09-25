@@ -6,6 +6,7 @@ import com.powernobug.mall.product.dto.*;
 import com.powernobug.mall.product.mapper.FirstLevelCategoryMapper;
 import com.powernobug.mall.product.mapper.SecondLevelCategoryMapper;
 import com.powernobug.mall.product.mapper.ThirdLevelCategoryMapper;
+import com.powernobug.mall.product.model.CategoryHierarchy;
 import com.powernobug.mall.product.model.FirstLevelCategory;
 import com.powernobug.mall.product.model.SecondLevelCategory;
 import com.powernobug.mall.product.model.ThirdLevelCategory;
@@ -78,7 +79,33 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryHierarchyDTO getCategoryViewByCategoryId(Long thirdLevelCategoryId) {
-        return null;
+        CategoryHierarchy categoryHierarchy = new CategoryHierarchy();
+        //三级分类
+        LambdaQueryWrapper<ThirdLevelCategory> wrapper1 = new LambdaQueryWrapper<>();
+        wrapper1.eq(ThirdLevelCategory::getId,thirdLevelCategoryId);
+        ThirdLevelCategory thirdLevelCategory = thirdLevelCategoryMapper.selectOne(wrapper1);
+        if(thirdLevelCategory!=null){
+            String thirdLevelCategoryName = thirdLevelCategory.getName();
+            categoryHierarchy.setThirdLevelCategoryId(thirdLevelCategoryId);
+            categoryHierarchy.setThirdLevelCategoryName(thirdLevelCategoryName);
+            Long secondLevelCategoryId = thirdLevelCategory.getSecondLevelCategoryId();
+            //二级分类
+            LambdaQueryWrapper<SecondLevelCategory> wrapper2 = new LambdaQueryWrapper<>();
+            wrapper2.eq(SecondLevelCategory::getId,secondLevelCategoryId);
+            SecondLevelCategory secondLevelCategory = secondLevelCategoryMapper.selectOne(wrapper2);
+            String secondLevelCategoryName = secondLevelCategory.getName();
+            categoryHierarchy.setSecondLevelCategoryId(secondLevelCategoryId);
+            categoryHierarchy.setSecondLevelCategoryName(secondLevelCategoryName);
+            Long firstLevelCategoryId = secondLevelCategory.getFirstLevelCategoryId();
+            //一级分类
+            LambdaQueryWrapper<FirstLevelCategory> wrapper3 = new LambdaQueryWrapper<>();
+            wrapper3.eq(FirstLevelCategory::getId,firstLevelCategoryId);
+            FirstLevelCategory firstLevelCategory = firstLevelCategoryMapper.selectOne(wrapper3);
+            String firstLevelCategoryName = firstLevelCategory.getName();
+            categoryHierarchy.setFirstLevelCategoryId(firstLevelCategoryId);
+            categoryHierarchy.setFirstLevelCategoryName(firstLevelCategoryName);
+        }
+        return categoryConverter.categoryViewPO2DTO(categoryHierarchy);
     }
 
     @Override

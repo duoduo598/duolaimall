@@ -15,6 +15,7 @@ import com.powernobug.mall.product.service.SpuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -48,6 +49,8 @@ public class SpuServiceImpl implements SpuService {
     SpuSaleAttrInfoMapper spuSaleAttrInfoMapper;
     @Autowired
     SpuSaleAttrValueMapper spuSaleAttrValueMapper;
+    @Autowired
+    SkuSaleAttrValueMapper skuSaleAttrValueMapper;
     @Override
     public List<SaleAttributeInfoDTO> getSaleAttrInfoList() {
         List<SaleAttributeInfo> saleAttributeInfos = saleAttrInfoMapper.selectList(null);
@@ -152,6 +155,9 @@ public class SpuServiceImpl implements SpuService {
 
     @Override
     public Map<String, Long> getSkuValueIdsMap(Long spuId) {
-        return null;
+        List<SkuSaleAttributeValuePermutation> skuSaleAttributeValuePermutations = skuSaleAttrValueMapper.selectSaleAttrValuesBySpu(spuId);
+        Map<String, Long> map = new HashMap<>();
+        skuSaleAttributeValuePermutations.forEach(skuValuePermutation -> map.put(skuValuePermutation.getSkuSaleAttrValuePermutation(),skuValuePermutation.getSkuId()));
+        return map;
     }
 }

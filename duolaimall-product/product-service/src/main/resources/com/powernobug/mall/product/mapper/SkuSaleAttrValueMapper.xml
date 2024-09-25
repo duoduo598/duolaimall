@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.powernobug.mall.product.mapper.SkuSaleAttrValueMapper">
+    <resultMap id="saleAttrValues" type="com.powernobug.mall.product.model.SkuSaleAttributeValuePermutation">
+        <id column="sku_id" property="skuId"/>
+        <result column="skuSaleAttrValuePermutation" property="skuSaleAttrValuePermutation"/>
+    </resultMap>
+    <select id="selectSaleAttrValuesBySpu" resultMap="saleAttrValues">
+        select sku_id,group_concat(a.spu_sale_attr_value_id order by d.sale_attr_id separator "|") as skuSaleAttrValuePermutation
+        from mall_product.sku_sale_attr_value as a
+                          inner join mall_product.sku_info as b on a.sku_id=b.id and b.is_sale=1 and a.is_deleted=0 and b.is_deleted=0
+                          inner join mall_product.spu_sale_attr_value as c on a.spu_sale_attr_value_id=c.id and c.is_deleted=0
+                          inner join mall_product.spu_sale_attr_info as d on c.spu_sale_attr_id=d.id and d.is_deleted=0
+        where a.spu_id=#{spuId}
+        group by a.sku_id
+    </select>
+</mapper>

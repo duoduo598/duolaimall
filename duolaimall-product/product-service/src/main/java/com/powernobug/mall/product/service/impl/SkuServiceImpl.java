@@ -4,22 +4,20 @@ import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.powernobug.mall.product.converter.dto.PlatformAttributeInfoConverter;
+import com.powernobug.mall.product.converter.dto.SkuInfoConverter;
 import com.powernobug.mall.product.converter.dto.SkuInfoPageConverter;
+import com.powernobug.mall.product.converter.dto.SpuInfoConverter;
 import com.powernobug.mall.product.converter.param.SkuInfoParamConverter;
 import com.powernobug.mall.product.dto.PlatformAttributeInfoDTO;
 import com.powernobug.mall.product.dto.SkuInfoDTO;
 import com.powernobug.mall.product.dto.SkuInfoPageDTO;
 import com.powernobug.mall.product.dto.SpuSaleAttributeInfoDTO;
-import com.powernobug.mall.product.mapper.SkuImageMapper;
-import com.powernobug.mall.product.mapper.SkuInfoMapper;
-import com.powernobug.mall.product.mapper.SkuPlatformAttrValueMapper;
-import com.powernobug.mall.product.mapper.SkuSaleAttrValueMapper;
-import com.powernobug.mall.product.model.SkuImage;
-import com.powernobug.mall.product.model.SkuInfo;
-import com.powernobug.mall.product.model.SkuPlatformAttributeValue;
-import com.powernobug.mall.product.model.SkuSaleAttributeValue;
+import com.powernobug.mall.product.mapper.*;
+import com.powernobug.mall.product.model.*;
 import com.powernobug.mall.product.query.SkuInfoParam;
 import com.powernobug.mall.product.service.SkuService;
+import com.powernobug.mall.product.service.SpuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -36,11 +34,19 @@ import java.util.List;
 @Service
 public class SkuServiceImpl implements SkuService {
     @Autowired
+    SpuInfoConverter spuInfoConverter;
+    @Autowired
+    SkuInfoConverter skuInfoConverter;
+    @Autowired
     SkuInfoParamConverter skuInfoParamConverter;
     @Autowired
     SkuInfoPageConverter skuInfoPageConverter;
     @Autowired
+    PlatformAttributeInfoConverter platformAttributeInfoConverter;
+    @Autowired
     SkuInfoMapper skuInfoMapper;
+    @Autowired
+    SpuSaleAttrInfoMapper spuSaleAttrInfoMapper;
     @Autowired
     SkuSaleAttrValueMapper skuSaleAttrValueMapper;
     @Autowired
@@ -118,21 +124,42 @@ public class SkuServiceImpl implements SkuService {
 
     @Override
     public SkuInfoDTO getSkuInfo(Long skuId) {
-        return null;
+        LambdaQueryWrapper<SkuInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SkuInfo::getId,skuId);
+        SkuInfo skuInfo = skuInfoMapper.selectOne(queryWrapper);
+        //封装sku商品平台属性值集合
+        LambdaQueryWrapper<SkuPlatformAttributeValue> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SkuPlatformAttributeValue::getSkuId,skuId);
+        skuInfo.setSkuPlatformAttributeValueList(skuPlatformAttrValueMapper.selectList(wrapper));
+        //封装sku商品图片列表
+
+        skuInfo.setSkuImageList(skuImageMapper.getSkuImages(skuId));
+
+        //封装sku销售属性值集合
+        LambdaQueryWrapper<SkuSaleAttributeValue> wrapper2 = new LambdaQueryWrapper<>();
+        wrapper2.eq(SkuSaleAttributeValue::getSkuId,skuId);
+        skuInfo.setSkuSaleAttributeValueList(skuSaleAttrValueMapper.selectList(wrapper2));
+
+        return skuInfoConverter.skuInfoPO2DTO(skuInfo);
     }
 
     @Override
     public BigDecimal getSkuPrice(Long skuId) {
-        return null;
+        LambdaQueryWrapper<SkuInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SkuInfo::getId,skuId);
+        SkuInfo skuInfo = skuInfoMapper.selectOne(queryWrapper);
+        return skuInfo.getPrice();
     }
 
     @Override
     public List<SpuSaleAttributeInfoDTO> getSpuSaleAttrListCheckBySku(Long skuId, Long spuId) {
-        return null;
+        List<SpuSaleAttributeInfo> spuSaleAttributeInfo=spuSaleAttrInfoMapper.selectSpuSaleAttrListCheckBySku(skuId,spuId);
+        return spuInfoConverter.spuSaleAttributeInfoPOs2DTOs(spuSaleAttributeInfo);
     }
 
     @Override
     public List<PlatformAttributeInfoDTO> getPlatformAttrInfoBySku(Long skuId) {
-        return null;
+        List<PlatformAttributeInfo> platformAttributeInfos = skuPlatformAttrValueMapper.selectPlatformAttrInfoBySku(skuId);
+        return platformAttributeInfoConverter.platformAttributeInfoPOs2DTOs(platformAttributeInfos);
     }
 }

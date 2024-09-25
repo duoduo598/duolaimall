@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.powernobug.mall.product.mapper.SpuSaleAttrInfoMapper">
-    <resultMap id="SpuSaleAttributeInfoMap" type="com.powernobug.mall.product.model.SpuSaleAttributeInfo" autoMapping="true">
+    <resultMap id="SpuSaleAttributeInfoMap" type="com.powernobug.mall.product.model.SpuSaleAttributeInfo" >
         <id column="id" property="id"/>
-<!--        <result column="spu_id" property="spuId"/>-->
-<!--        <result column="sale_attr_id" property="saleAttrId"/>-->
-<!--        <result column="sale_attr_name" property="saleAttrName"/>-->
+        <result column="spu_id" property="spuId"/>
+        <result column="sale_attr_id" property="saleAttrId"/>
+        <result column="sale_attr_name" property="saleAttrName"/>
 
-        <collection property="spuSaleAttrValueList" ofType="com.powernobug.mall.product.model.SpuSaleAttributeValue" autoMapping="true">
+        <collection property="spuSaleAttrValueList" ofType="com.powernobug.mall.product.model.SpuSaleAttributeValue" >
             <id column="bid" property="id"/>
-<!--            <result column="bspuid" property="spuId"/>-->
-<!--            <result column="spu_sale_attr_id" property="spuSaleAttrId"/>-->
-<!--            <result column="spu_sale_attr_value_name" property="spuSaleAttrValueName"/>-->
+            <result column="spu_sale_attr_id" property="spuSaleAttrId"/>
+            <result column="spu_sale_attr_value_name" property="spuSaleAttrValueName"/>
         </collection>
     </resultMap>
     <select id="selectSpuSaleAttrList" resultMap="SpuSaleAttributeInfoMap">
@@ -26,5 +25,29 @@
                  inner join mall_product.spu_sale_attr_value as b
                             on a.id = b.spu_sale_attr_id
                                 and a.is_deleted = 0 and b.is_deleted = 0 where a.spu_id=#{spuId}
+    </select>
+
+    <resultMap id="InfoMap" type="com.powernobug.mall.product.model.SpuSaleAttributeInfo" autoMapping="true">
+        <id column="id" property="id"></id>
+        <collection property="spuSaleAttrValueList" ofType="com.powernobug.mall.product.model.SpuSaleAttributeValue" autoMapping="true">
+            <id column="bid" property="id"></id>
+        </collection>
+    </resultMap>
+    <select id="selectSpuSaleAttrListCheckBySku" resultMap="InfoMap">
+        select
+        a.id,
+        a.spu_id,
+        a.sale_attr_id,
+        a.sale_attr_name,
+        b.id as bid,
+        b.spu_sale_attr_id,
+        b.spu_sale_attr_value_name,
+        if(c.sku_id is null,0,1) is_checked
+        from mall_product.spu_sale_attr_info as a
+        inner join mall_product.spu_sale_attr_value as b on a.id=b.spu_sale_attr_id
+        left join mall_product.sku_sale_attr_value as c on b.id=c.spu_sale_attr_value_id and c.sku_id=#{skuId}
+        where a.spu_id=#{spuId}
+        and a.is_deleted=0 and b.is_deleted=0
+        order by a.sale_attr_id,b.id
     </select>
 </mapper>

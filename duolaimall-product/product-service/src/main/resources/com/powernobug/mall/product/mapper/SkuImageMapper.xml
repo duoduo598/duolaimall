@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.powernobug.mall.product.mapper.SkuImageMapper">
+    <resultMap id="skuImageMap" type="com.powernobug.mall.product.model.SkuImage">
+        <id column="id" property="id"/>
+        <result column="sku_id" property="skuId"/>
+        <result column="img_name" property="imgName"/>
+        <result column="img_url" property="imgUrl"/>
+        <result column="spu_img_id" property="spuImgId"/>
+        <result column="is_default" property="isDefault"/>
+    </resultMap>
+    <select id="getSkuImages" resultMap="skuImageMap">
+        select a.id,a.sku_id,b.img_name,b.img_url,a.spu_img_id,a.is_default
+        from mall_product.sku_image as a inner join mall_product.spu_image as b on a.spu_img_id=b.id and
+        a.is_deleted=0 and b.is_deleted=0 where a.sku_id=#{skuId};
+    </select>
+</mapper>

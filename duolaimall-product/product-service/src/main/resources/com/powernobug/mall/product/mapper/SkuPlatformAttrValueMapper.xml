@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.powernobug.mall.product.mapper.SkuPlatformAttrValueMapper">
+    <resultMap id="PlatformInfo" type="com.powernobug.mall.product.model.PlatformAttributeInfo" >
+        <id column="id" property="id"/>
+        <result column="attr_name" property="attrName"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="category_level" property="categoryLevel"/>
+        <collection property="attrValueList" ofType="com.powernobug.mall.product.model.PlatformAttributeValue">
+            <id column="bid" property="id"/>
+            <result column="value_name" property="valueName"/>
+        </collection>
+    </resultMap>
+    <select id="selectPlatformAttrInfoBySku" resultMap="PlatformInfo">
+        select c.id,c.attr_name,c.category_id,c.category_level,
+        b.id as bid,b.value_name
+        from mall_product.sku_platform_attr_value as a
+                          inner join mall_product.platform_attr_value as b on a.value_id=b.id
+                          inner join mall_product.platform_attr_info as c on b.attr_id=c.id
+            and a.is_deleted=0 and b.is_deleted=0 and c.is_deleted=0
+        where a.sku_id=#{skuId}
+    </select>
+</mapper>
