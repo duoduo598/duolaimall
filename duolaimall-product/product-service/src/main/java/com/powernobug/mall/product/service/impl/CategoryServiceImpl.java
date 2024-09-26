@@ -16,7 +16,13 @@ import com.powernobug.mall.product.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @description:
@@ -110,6 +116,48 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<FirstLevelCategoryNodeDTO> getCategoryTreeList() {
-        return null;
+        //判空，查出List<ThirdLevelCategory>
+        LambdaQueryWrapper<ThirdLevelCategory> wrapper1 = new LambdaQueryWrapper<>();
+        wrapper1.isNotNull(ThirdLevelCategory::getSecondLevelCategoryId);
+        List<ThirdLevelCategory> thirdLevelCategories = thirdLevelCategoryMapper.selectList(wrapper1);
+        //封装所有的三级类目
+        Map<Long, List<ThirdLevelCategory>> collect1 = thirdLevelCategories.stream().collect(Collectors.groupingBy(ThirdLevelCategory::getSecondLevelCategoryId));
+        //新建一个map来接收，转换完的ThirdLevelCategoryNodeDTO
+        Map<Long, List<ThirdLevelCategoryNodeDTO>> newcollect1=new HashMap<>();
+        collect1.forEach((key, value) -> newcollect1.put(key, categoryConverter.thirdLevelCategoryNodePOs2DTOs(value)));
+
+
+
+        //判空，查未封装categoryChild的List<SecondLevelCategory>
+        LambdaQueryWrapper<SecondLevelCategory> wrapper2 = new LambdaQueryWrapper<>();
+        wrapper2.isNotNull(SecondLevelCategory::getFirstLevelCategoryId);
+        List<SecondLevelCategory> secondLevelCategories = secondLevelCategoryMapper.selectList(wrapper2);
+        //封装所有的二级类目
+        Map<Long, List<SecondLevelCategory>> collect2 = secondLevelCategories.stream().collect(Collectors.groupingBy(SecondLevelCategory::getFirstLevelCategoryId));
+        //新建一个map来接收，转换完的SecondLevelCategoryNodeDTO
+        Map<Long, List<SecondLevelCategoryNodeDTO>> newcollect2=new HashMap<>();
+        collect2.forEach((key, value) -> newcollect2.put(key, categoryConverter.secondLevelCategoryNodePOs2DTOs(value)));
+        //为newcollect2中每个list中SecondLevelCategoryNodeDTO对象赋值
+        newcollect2.values().forEach(secondLevelCategoryNodeDTOS -> secondLevelCategoryNodeDTOS.forEach(secondLevelCategoryNodeDTO -> {
+            Long categoryId = secondLevelCategoryNodeDTO.getCategoryId();
+            secondLevelCategoryNodeDTO.setCategoryChild(newcollect1.get(categoryId));
+        }));
+
+
+
+        //判空，查未封装categoryChild的List<FirstLevelCategory>
+        LambdaQueryWrapper<FirstLevelCategory> wrapper3 = new LambdaQueryWrapper<>();
+        wrapper3.isNotNull(FirstLevelCategory::getId);
+        List<FirstLevelCategory> firstLevelCategories = firstLevelCategoryMapper.selectList(wrapper3);
+        //转换为DTO对象list
+        List<FirstLevelCategoryNodeDTO> firstLevelCategoryNodeDTOS = categoryConverter.firstLevelCategoryNodePOs2DTOs(firstLevelCategories);
+        //遍历封装
+        firstLevelCategoryNodeDTOS.forEach(firstLevelCategoryNodeDTO -> {
+            Long categoryId = firstLevelCategoryNodeDTO.getCategoryId();
+            firstLevelCategoryNodeDTO.setCategoryChild(newcollect2.get(categoryId));
+        });
+
+
+        return firstLevelCategoryNodeDTOS;
     }
 }
