@@ -18,11 +18,16 @@ import com.powernobug.mall.product.model.*;
 import com.powernobug.mall.product.query.SkuInfoParam;
 import com.powernobug.mall.product.service.SkuService;
 import com.powernobug.mall.product.service.SpuService;
+import org.redisson.api.RBucket;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @description:
@@ -53,6 +58,8 @@ public class SkuServiceImpl implements SkuService {
     SkuPlatformAttrValueMapper skuPlatformAttrValueMapper;
     @Autowired
     SkuImageMapper skuImageMapper;
+    @Autowired
+    RedissonClient redissonClient;
     @Override
     public void saveSkuInfo(SkuInfoParam skuInfoParam) {
               /*
@@ -121,28 +128,52 @@ public class SkuServiceImpl implements SkuService {
         updateWrapper.set(SkuInfo::getIsSale,0);
         skuInfoMapper.update(null,updateWrapper);
     }
-
     @Override
     public SkuInfoDTO getSkuInfo(Long skuId) {
-        LambdaQueryWrapper<SkuInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(SkuInfo::getId,skuId);
-        SkuInfo skuInfo = skuInfoMapper.selectOne(queryWrapper);
-        //封装sku商品平台属性值集合
-        LambdaQueryWrapper<SkuPlatformAttributeValue> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SkuPlatformAttributeValue::getSkuId,skuId);
-        skuInfo.setSkuPlatformAttributeValueList(skuPlatformAttrValueMapper.selectList(wrapper));
-        //封装sku商品图片列表
+        //1.先查redis，查到就返回
+        String key="sku:info:"+skuId;
+        RBucket<SkuInfoDTO> bucket = redissonClient.getBucket(key);
+        SkuInfoDTO skuInfoDTO = bucket.get();
+        if(skuInfoDTO!=null){
+            return skuInfoDTO;
+        }
+        //2.没找到，查数据库
+        String lockKey=key+":lock";
+        RLock lock = redissonClient.getLock(lockKey);
 
-        skuInfo.setSkuImageList(skuImageMapper.getSkuImages(skuId));
+        try {
+            //缓存击穿：加锁
+            lock.lock();
 
-        //封装sku销售属性值集合
-        LambdaQueryWrapper<SkuSaleAttributeValue> wrapper2 = new LambdaQueryWrapper<>();
-        wrapper2.eq(SkuSaleAttributeValue::getSkuId,skuId);
-        skuInfo.setSkuSaleAttributeValueList(skuSaleAttrValueMapper.selectList(wrapper2));
+            //double check
+            skuInfoDTO = bucket.get();
+            if(skuInfoDTO!=null){
+                return skuInfoDTO;
+            }
 
-        return skuInfoConverter.skuInfoPO2DTO(skuInfo);
+            //查询数据库
+            SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+            skuInfo.setSkuImageList(skuImageMapper.getSkuImages(skuId));
+            skuInfoDTO = skuInfoConverter.skuInfoPO2DTO(skuInfo);
+
+            //缓存穿透：数据库为空，new一个空对象保存在Redis中
+            if(skuInfoDTO==null){
+                skuInfoDTO=new SkuInfoDTO();
+            }
+
+            //把数据存入Redis
+            //缓存雪崩：设置一个过期时间
+            Random random = new Random();
+            int randomTime = random.nextInt(60);
+            bucket.set(skuInfoDTO,120+randomTime, TimeUnit.SECONDS);
+
+        } finally {
+           lock.unlock();
+        }
+
+        //3.返回结果
+        return skuInfoDTO;
     }
-
     @Override
     public BigDecimal getSkuPrice(Long skuId) {
         LambdaQueryWrapper<SkuInfo> queryWrapper = new LambdaQueryWrapper<>();
