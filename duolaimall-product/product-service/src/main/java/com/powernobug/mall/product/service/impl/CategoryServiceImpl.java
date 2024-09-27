@@ -1,6 +1,7 @@
 package com.powernobug.mall.product.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.powernobug.mall.product.cache.RedisCache;
 import com.powernobug.mall.product.converter.dto.CategoryConverter;
 import com.powernobug.mall.product.dto.*;
 import com.powernobug.mall.product.mapper.FirstLevelCategoryMapper;
@@ -83,6 +84,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     }
 
+    @RedisCache(prefix = "product:detail:category:")
     @Override
     public CategoryHierarchyDTO getCategoryViewByCategoryId(Long thirdLevelCategoryId) {
         CategoryHierarchy categoryHierarchy = new CategoryHierarchy();

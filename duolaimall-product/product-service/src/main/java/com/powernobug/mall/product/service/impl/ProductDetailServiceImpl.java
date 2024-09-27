@@ -2,6 +2,7 @@ package com.powernobug.mall.product.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.common.utils.CollectionUtils;
+import com.powernobug.mall.common.constant.RedisConst;
 import com.powernobug.mall.product.converter.dto.CategoryConverter;
 import com.powernobug.mall.product.dto.*;
 import com.powernobug.mall.product.mapper.CategoryHierarchyMapper;
@@ -10,6 +11,9 @@ import com.powernobug.mall.product.service.CategoryService;
 import com.powernobug.mall.product.service.ProductDetailService;
 import com.powernobug.mall.product.service.SkuService;
 import com.powernobug.mall.product.service.SpuService;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBloomFilter;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +34,7 @@ import java.util.stream.Collectors;
  * @date: 2024/9/23 20:24
  */
 @Service
+@Slf4j
 public class ProductDetailServiceImpl implements ProductDetailService {
     @Autowired
     SkuService skuService;
@@ -39,11 +44,22 @@ public class ProductDetailServiceImpl implements ProductDetailService {
     CategoryService categoryService;
     @Autowired
     CategoryConverter categoryConverter;
+    @Autowired
+    RedissonClient redissonClient;
     static ExecutorService executorService= Executors.newFixedThreadPool(10);
     @Override
     public ProductDetailDTO getItemBySkuId(Long skuId) {
         ProductDetailDTO productDetailDTO = new ProductDetailDTO();
         long startTime = System.currentTimeMillis();
+
+        RBloomFilter<Object> bloomFilter = redissonClient.getBloomFilter(RedisConst.SKU_BLOOM_FILTER);
+        if(!bloomFilter.contains(skuId)){
+            System.out.println("布隆过滤器对商品详情页的请求进行了拦截，商品id:" + skuId);
+            return productDetailDTO;
+        }
+
+        log.info("布隆过滤器放行了， 商品id:{}",skuId);
+
         // 商品sku 信息
         CompletableFuture<SkuInfoDTO> cf1 = CompletableFuture.supplyAsync(() -> {
             SkuInfoDTO skuInfo = skuService.getSkuInfo(skuId);

@@ -3,6 +3,7 @@ package com.powernobug.mall.product.service.impl;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.powernobug.mall.product.cache.RedisCache;
 import com.powernobug.mall.product.converter.dto.SaleAttributeInfoConverter;
 import com.powernobug.mall.product.converter.dto.SpuInfoConverter;
 import com.powernobug.mall.product.converter.dto.SpuInfoPageConverter;
@@ -145,6 +146,7 @@ public class SpuServiceImpl implements SpuService {
         return spuInfoConverter.spuSaleAttributeInfoPOs2DTOs(spuSaleAttributeInfos);
     }
 
+    @RedisCache(prefix = "product:detail:poster:")
     @Override
     public List<SpuPosterDTO> findSpuPosterBySpuId(Long spuId) {
         LambdaQueryWrapper<SpuPoster> wrapper = new LambdaQueryWrapper<>();
@@ -153,6 +155,7 @@ public class SpuServiceImpl implements SpuService {
         return spuInfoConverter.spuPosterPOs2DTOs(spuPosters);
     }
 
+    @RedisCache(prefix = "product:detail:skuValueMap:")
     @Override
     public Map<String, Long> getSkuValueIdsMap(Long spuId) {
         List<SkuSaleAttributeValuePermutation> skuSaleAttributeValuePermutations = skuSaleAttrValueMapper.selectSaleAttrValuesBySpu(spuId);
