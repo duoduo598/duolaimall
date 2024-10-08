@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.powernobug.mall.common.constant.RedisConst;
 import com.powernobug.mall.product.cache.RedisCache;
+import com.powernobug.mall.product.client.SearchApiClient;
 import com.powernobug.mall.product.converter.dto.PlatformAttributeInfoConverter;
 import com.powernobug.mall.product.converter.dto.SkuInfoConverter;
 import com.powernobug.mall.product.converter.dto.SkuInfoPageConverter;
@@ -64,6 +65,8 @@ public class SkuServiceImpl implements SkuService {
     SkuImageMapper skuImageMapper;
     @Autowired
     RedissonClient redissonClient;
+    @Autowired
+    SearchApiClient searchApiClient;
     @Override
     public void saveSkuInfo(SkuInfoParam skuInfoParam) {
               /*
@@ -123,9 +126,13 @@ public class SkuServiceImpl implements SkuService {
         updateWrapper.eq(SkuInfo::getId,skuId);
         updateWrapper.set(SkuInfo::getIsSale,1);
         skuInfoMapper.update(null,updateWrapper);
+
+
         RBloomFilter<Object> bloomFilter = redissonClient.getBloomFilter(RedisConst.SKU_BLOOM_FILTER);
         bloomFilter.add(skuId);
         System.out.println("往布隆过滤器中添加了一个元素:" + skuId);
+
+        searchApiClient.upperGoods(skuId);
     }
 
     @Override
@@ -134,6 +141,8 @@ public class SkuServiceImpl implements SkuService {
         updateWrapper.eq(SkuInfo::getId,skuId);
         updateWrapper.set(SkuInfo::getIsSale,0);
         skuInfoMapper.update(null,updateWrapper);
+
+        searchApiClient.lowerGoods(skuId);
     }
     @RedisCache(prefix = "product:detail:skuInfo:")
     @Override

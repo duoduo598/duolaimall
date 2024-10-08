@@ -3,6 +3,7 @@ package com.powernobug.mall.product.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.powernobug.mall.common.constant.RedisConst;
+import com.powernobug.mall.product.client.SearchApiClient;
 import com.powernobug.mall.product.converter.dto.CategoryConverter;
 import com.powernobug.mall.product.dto.*;
 import com.powernobug.mall.product.mapper.CategoryHierarchyMapper;
@@ -46,6 +47,8 @@ public class ProductDetailServiceImpl implements ProductDetailService {
     CategoryConverter categoryConverter;
     @Autowired
     RedissonClient redissonClient;
+    @Autowired
+    SearchApiClient searchApiClient;
     static ExecutorService executorService= Executors.newFixedThreadPool(10);
     @Override
     public ProductDetailDTO getItemBySkuId(Long skuId) {
@@ -125,6 +128,9 @@ public class ProductDetailServiceImpl implements ProductDetailService {
 
         // 等待所有的异步任务都执行结束，再返回
         CompletableFuture.allOf(cf2,cf3,cf4,cf5,cf6,cf7).join();
+
+        //增加热度
+        searchApiClient.incrHotScore(skuId);
 
         long endTime = System.currentTimeMillis();
         System.out.println("查询的总耗时为："+(endTime-startTime)+"毫秒");
