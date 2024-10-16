@@ -14,7 +14,7 @@ public class DateUtil {
 
     private static final String dateFormat = "yyyy-MM-dd";
 
-
+    private static final String dateFormat2 = "yyyy-MM-dd HH:mm:ss";
     /**
      * 获取两个时间差 单位：秒
      * @param date1
@@ -37,6 +37,11 @@ public class DateUtil {
 
     }
 
+    public static String formatDate2(Date date) {
+        SimpleDateFormat sdf = new SimpleDateFormat(dateFormat2);
+        return sdf.format(date);
+
+    }
     /**
      * 截取比较断两个日期对象的field处的值 。
      * 如果第一个日期小于、等于、大于第二个，则对应返回负整数、0、正整数
@@ -84,6 +89,14 @@ public class DateUtil {
         return calendar.getTime();
     }
 
+    public static Date datePlusMinutes(Date nowDate, int minutes) {
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(nowDate);
+
+        calendar.add(Calendar.MINUTE,minutes);
+        return calendar.getTime();
+    }
     /**
      * @param nowDate
      * @param hours

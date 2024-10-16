@@ -13,8 +13,10 @@ public enum ResultCodeEnum implements CodeEnum {
     FAIL(201, "失败"),
     SERVICE_ERROR(500, "服务异常"),
     ILLEGAL_REQUEST( 204, "非法请求"),
+    SAVE_ORDER_FAIL(301,"订单保存失败"),
 //    PAY_RUN("205", "支付中"),
 //
+    ALIPAY_FAIL(302,"支付宝调用异常"),
     LOGIN_AUTH(208, "未登陆"),
     PERMISSION(209, "没有权限");
 //    SECKILL_NO_START(210, "秒杀还没开始"),

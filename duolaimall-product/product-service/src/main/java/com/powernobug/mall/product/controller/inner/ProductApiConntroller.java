@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -79,5 +80,10 @@ public class ProductApiConntroller {
         TrademarkDTO trademarkByTmId = trademarkService.getTrademarkByTmId(tmId);
         return trademarkByTmId;
 
+    }
+    // 获取商品的最新价格
+    @GetMapping("/api/product/inner/getSkuPrice/{skuId}")
+    public BigDecimal getSkuPrice(@PathVariable(value = "skuId") Long skuId){
+        return skuService.getSkuPrice(skuId);
     }
 }

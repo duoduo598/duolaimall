@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -33,6 +34,7 @@ public class CartServiceImpl implements CartService {
     ProductApiClient productApiClient;
     @Autowired
     SkuInfoConverter skuInfoConverter;
+
     @Override
     public void addToCart(Long skuId, String userId, Integer skuNum) {
         //1.获取购物车
@@ -159,16 +161,28 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public List<CartInfoDTO> getCartCheckedList(String userId) {
-        return null;
+        List<CartInfoDTO> cartList = getCartList(userId, null);
+        List<CartInfoDTO> checkedCartInfo = cartList.stream().filter(cartInfoDTO -> cartInfoDTO.getIsChecked() == 1).collect(Collectors.toList());
+        return checkedCartInfo;
     }
 
     @Override
     public void delete(String userId, List<Long> skuIds) {
-
+        String key=RedisConst.USER_CART_KEY_SUFFIX+userId;
+        RMap<Long, CartInfoDTO> map = redissonClient.getMap(key);
+        for (Long skuId : skuIds) {
+            map.remove(skuId);
+        }
     }
 
     @Override
     public void refreshCartPrice(String userId, Long skuId) {
-
+        String key=RedisConst.USER_CART_KEY_SUFFIX+userId;
+        RMap<Long, CartInfoDTO> map = redissonClient.getMap(key);
+        BigDecimal skuPrice = productApiClient.getSkuPrice(skuId);
+        CartInfoDTO cartInfoDTO = map.get(skuId);
+        cartInfoDTO.setCartPrice(skuPrice);
+        cartInfoDTO.setSkuPrice(skuPrice);
+        map.put(skuId,cartInfoDTO);
     }
 }

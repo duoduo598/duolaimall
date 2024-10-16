@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.powernobug.mall.common.constant.RedisConst;
+import com.powernobug.mall.mq.constant.MqTopicConst;
+import com.powernobug.mall.mq.producer.BaseProducer;
 import com.powernobug.mall.product.cache.RedisCache;
 import com.powernobug.mall.product.client.SearchApiClient;
 import com.powernobug.mall.product.converter.dto.PlatformAttributeInfoConverter;
@@ -67,6 +69,8 @@ public class SkuServiceImpl implements SkuService {
     RedissonClient redissonClient;
     @Autowired
     SearchApiClient searchApiClient;
+    @Autowired
+    BaseProducer baseProducer;
     @Override
     public void saveSkuInfo(SkuInfoParam skuInfoParam) {
               /*
@@ -132,7 +136,11 @@ public class SkuServiceImpl implements SkuService {
         bloomFilter.add(skuId);
         System.out.println("往布隆过滤器中添加了一个元素:" + skuId);
 
-        searchApiClient.upperGoods(skuId);
+        //用RocketMQ实现消息传递
+        baseProducer.sendMessage(MqTopicConst.PRODUCT_ONSALE_TOPIC,skuId);
+
+
+        //searchApiClient.upperGoods(skuId);
     }
 
     @Override
@@ -142,7 +150,9 @@ public class SkuServiceImpl implements SkuService {
         updateWrapper.set(SkuInfo::getIsSale,0);
         skuInfoMapper.update(null,updateWrapper);
 
-        searchApiClient.lowerGoods(skuId);
+
+        baseProducer.sendMessage(MqTopicConst.PRODUCT_OFFSALE_TOPIC,skuId);
+        //searchApiClient.lowerGoods(skuId);
     }
     @RedisCache(prefix = "product:detail:skuInfo:")
     @Override

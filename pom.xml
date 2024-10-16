@@ -14,10 +14,10 @@
         <module>duolaimall-search</module>
         <module>duolaimall-user</module>
         <module>duolaimall-cart</module>
-<!--        <module>duolaimall-order</module>-->
-<!--        <module>duolaimall-pay</module>-->
-<!--        <module>duolaimall-promo</module>-->
-<!--        <module>duolaimall-ware</module>-->
+        <module>duolaimall-order</module>
+        <module>duolaimall-pay</module>
+        <module>duolaimall-promo</module>
+        <module>duolaimall-ware</module>
     </modules>
     <packaging>pom</packaging>
 
