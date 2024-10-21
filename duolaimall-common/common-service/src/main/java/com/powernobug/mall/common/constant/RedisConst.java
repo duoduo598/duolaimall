@@ -63,7 +63,7 @@ public class RedisConst {
     public static final int SECKILL__TIMEOUT = 60 * 60 * 1;
 
     // Redis中的 秒杀订单记录
-    public static final String PROMO_SECKILL_ORDERS = "promo:orders";
+    public static final String PROMO_SECKILL_ORDERS = "promo:orders:";
 
     // 提交订单标记
     public static final String PROMO_SUBMIT_ORDER = "promo:submit";
@@ -73,5 +73,6 @@ public class RedisConst {
     public static final String PROMO_TRANSACTION_PREFIX = "promo:transaction";
 
 
-
+    public static final String PROMO_ORDER_REPEAT = "promo:order:repeat:";
+    public static final String PROMO_MESSAGE_REPEAT = "promo:message:repeat:";
 }

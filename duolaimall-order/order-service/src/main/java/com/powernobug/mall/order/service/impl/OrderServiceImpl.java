@@ -8,11 +8,14 @@ import com.powernobug.mall.common.constant.ResultCodeEnum;
 import com.powernobug.mall.common.execption.BusinessException;
 import com.powernobug.mall.common.result.Result;
 import com.powernobug.mall.common.util.DateUtil;
+import com.powernobug.mall.mq.constant.MqTopicConst;
+import com.powernobug.mall.mq.producer.BaseProducer;
 import com.powernobug.mall.order.client.CartApiClient;
 import com.powernobug.mall.order.client.PayApiClient;
 import com.powernobug.mall.order.client.UserApiClient;
 import com.powernobug.mall.order.client.WareApiClient;
 import com.powernobug.mall.order.constant.OrderStatus;
+import com.powernobug.mall.order.constant.OrderType;
 import com.powernobug.mall.order.converter.CartInfoConverter;
 import com.powernobug.mall.order.converter.OrderDetailConverter;
 import com.powernobug.mall.order.converter.OrderInfoConverter;
@@ -64,6 +67,8 @@ public class OrderServiceImpl implements OrderService {
     WareApiClient wareApiClient;
     @Autowired
     PayApiClient payApiClient;
+    @Autowired
+    BaseProducer baseProducer;
     @Override
     public OrderTradeDTO getTradeInfo(String userId) {
         OrderTradeDTO orderTradeDTO = new OrderTradeDTO();
@@ -115,6 +120,7 @@ public class OrderServiceImpl implements OrderService {
         }
         Long orderId = orderInfo.getId();
         for (OrderDetail orderDetail : orderInfo.getOrderDetailList()) {
+            orderDetail.setId(null);
             orderDetail.setOrderId(orderId);
             int inserted = orderDetailMapper.insert(orderDetail);
             if(inserted<1){
@@ -171,11 +177,13 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public void successPay(Long orderId) {
         //1.更新订单表
-        OrderInfo orderInfo = new OrderInfo();
-        orderInfo.setId(orderId);
-        orderInfo.setOrderStatus(OrderStatus.PAID.name());
+        OrderInfoDTO orderInfoDTO = getOrderInfo(orderId);
+        OrderInfo info = orderInfoConverter.copyOrderInfo(orderInfoDTO);
 
-        int affectedRows = orderInfoMapper.updateById(orderInfo);
+        info.setOrderStatus(OrderStatus.PAID.name());
+
+
+        int affectedRows = orderInfoMapper.updateById(info);
         if(affectedRows<1){
             throw new RuntimeException("订单更新失败");
         }
@@ -194,8 +202,10 @@ public class OrderServiceImpl implements OrderService {
 
         String orderStatus = "DEDUCTED".equals(taskStatus) ? OrderStatus.WAIT_DELEVER.name() : OrderStatus.STOCK_EXCEPTION.name();
 
-        OrderInfo orderInfo = new OrderInfo();
-        orderInfo.setId(Long.valueOf(orderId));
+        //不能用new来更新，会使原本订单类型为promoOrder的订单变成默认值的normalOrder
+        OrderInfoDTO orderInfoDTO = getOrderInfo(Long.valueOf(orderId));
+        OrderInfo orderInfo = orderInfoConverter.copyOrderInfo(orderInfoDTO);
+
         orderInfo.setOrderStatus(orderStatus);
 
         int affectedRows = orderInfoMapper.updateById(orderInfo);
@@ -211,7 +221,7 @@ public class OrderServiceImpl implements OrderService {
      * @return
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public List<WareOrderTaskDTO> orderSplit(String orderId, List<WareSkuDTO> wareSkuDTOList) {
 
         // 1. 查询原订单
@@ -368,12 +378,48 @@ public class OrderServiceImpl implements OrderService {
     private void closeOrder(Long orderId) {
         OrderInfo updateOrderInfo = new OrderInfo();
         updateOrderInfo.setId(orderId);
+        //如果订单类型已经存在，就设置成原来的
+        OrderInfoDTO oldOrderInfo = getOrderInfo(orderId);
+        String orderType = oldOrderInfo.getOrderType();
+
+        updateOrderInfo.setOrderType(orderType);
         updateOrderInfo.setOrderStatus(OrderStatus.CLOSED.name());
         orderInfoMapper.updateById(updateOrderInfo);
     }
 
     @Override
     public Long saveSeckillOrder(OrderInfoParam orderInfoParam) {
-        return null;
+        // 1. 转化
+        OrderInfo orderInfo = orderInfoConverter.convertOrderInfoParam(orderInfoParam);
+        // 2. 给对应的成员变量进行赋值
+        orderInfo.setOrderStatus(OrderStatus.UNPAID.name());        // 设置订单状态
+        orderInfo.sumTotalAmount();                                 // 设置订单总金额
+        orderInfo.setOutTradeNo(UUID.randomUUID().toString().replaceAll("-",""));   // 设置外部订单编号
+        orderInfo.setTradeBody(orderInfo.getOrderDetailList().get(0).getSkuName()); // 设置订单标题
+        Date expireTime = DateUtil.datePlusMinutes(new Date(), 2);
+        orderInfo.setExpireTime(expireTime);  // 设置订单过期时间
+
+        // 设置订单类型
+        orderInfo.setOrderType(OrderType.PROMO_ORDER.name());
+
+        int affectedRows = orderInfoMapper.insert(orderInfo);
+        if(affectedRows<1){
+            throw new BusinessException(ResultCodeEnum.SAVE_ORDER_FAIL);
+        }
+        Long orderId = orderInfo.getId();
+        for (OrderDetail orderDetail : orderInfo.getOrderDetailList()) {
+            orderDetail.setId(null);
+            orderDetail.setOrderId(orderId);
+            int inserted = orderDetailMapper.insert(orderDetail);
+            if(inserted<1){
+                throw new BusinessException(ResultCodeEnum.SAVE_ORDER_FAIL);
+            }
+        }
+        //过期取消
+        Boolean ret = baseProducer.sendDelayMessage(MqTopicConst.DELAY_ORDER_TOPIC, orderId, MqTopicConst.DELAY_ORDER_LEVEL);
+        if(!ret){
+            throw new BusinessException("发送消息失败", ResultCodeEnum.FAIL.getCode());
+        }
+        return orderId;
     }
 }

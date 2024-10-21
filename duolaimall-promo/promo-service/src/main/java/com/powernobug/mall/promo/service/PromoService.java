@@ -41,7 +41,7 @@ public interface PromoService {
     /*
          组装订单确认页数据
      */
-    OrderTradeDTO getTradeData(String userId, SeckillGoods seckillGoods);
+    OrderTradeDTO getTradeData(String userId, Long skuId);
 
     /*
          提交秒杀订单

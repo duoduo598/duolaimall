@@ -1,5 +1,6 @@
 package com.powernobug.mall.promo.client;
 
+import com.powernobug.mall.common.result.Result;
 import com.powernobug.mall.order.query.OrderInfoParam;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,5 +15,5 @@ public interface OrderApiClient {
      * @return
      */
     @PostMapping("/api/order/inner/seckill/submitOrder")
-    Long submitOrder(@RequestBody OrderInfoParam orderInfo);
+    Result submitOrder(@RequestBody OrderInfoParam orderInfo);
 }

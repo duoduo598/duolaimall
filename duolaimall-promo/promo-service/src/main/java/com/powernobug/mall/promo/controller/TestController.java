@@ -1,35 +1,35 @@
-package com.powernobug.mall.promo.task;
+package com.powernobug.mall.promo.controller;
 
 import com.powernobug.mall.promo.service.PromoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @description:
  * @project: duolaimall
- * @package: com.powernobug.mall.promo.task
+ * @package: com.powernobug.mall.promo.controller
  * @author: HuangWeiLong
- * @date: 2024/10/16 20:15
+ * @date: 2024/10/20 22:29
  */
 @Slf4j
-@Component
-@EnableScheduling
-public class PromoTask {
+@RestController
+public class TestController {
     @Autowired
     PromoService promoService;
-    @Scheduled(cron = "0 10 * * * ?")
+    @GetMapping("init/cache")
     public void taskInitCache(){
         log.info("本地库存状态位初始化定时任务开始了......");
         promoService.importIntoRedis();
         log.info("本地库存状态位初始化定时任务结束了......");
     }
-    @Scheduled(cron = "0 0 22 * * ?")
+    @GetMapping("promo/finish")
     public void promoFinished() {
 
         log.info("活动结束，清空缓存...");
         promoService.clearRedisCache();
     }
+
 }
